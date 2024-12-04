@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inline Feedback Widget</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7fc;
+        }
+
+        #feedback-widget {
+    position: fixed; /* Fixed position relative to the viewport */
+    background: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 16px;
+    z-index: 1000;
+    display: none; /* Initially hidden */
+    font-family: Arial, sans-serif;
+    width: 300px; /* Fixed width */
+    max-width: 90%; /* To ensure it doesn't overflow */
+    box-sizing: border-box;
+    transition: all 0.3s ease-in-out;
+    max-height: 60vh; /* Prevent widget from growing too tall */
+    overflow-y: auto; /* Allow scrolling if content is too long */
+    word-wrap: break-word; /* Prevent long text from overflowing */
+}
+
+        #feedback-widget h4 {
+            margin: 0;
+            color: #333;
+            font-size: 1em;
+        }
+
+        #highlighted-text {
+    font-size: 0.9em;
+    color: #555;
+    margin: 8px 0;
+    background: #efefef;
+    padding: 8px;
+    border-radius: 4px;
+    max-width: 100%; /* Ensure the text doesn't overflow */
+    white-space: normal; /* Allow wrapping */
+    word-wrap: break-word; /* Ensure words break and wrap */
+    overflow-wrap: break-word; /* Break long words */
+    display: block; /* Ensure it doesn’t extend beyond its container */
+    max-height: 80px; /* Limit text height, adding scroll if necessary */
+    overflow: hidden; /* Hide overflow content */
+}
+
+        #feedback-text {
+            width: 100%;
+            height: 60px;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 0.9em;
+            box-sizing: border-box;
+        }
+
+        #submit-feedback {
+            width: 100%;
+            padding: 8px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.3s ease-in-out;
+        }
+
+        #submit-feedback:hover {
+            background: #0056b3;
+        }
+
+        #feedback-panel {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            width: 320px;
+            background: #fff;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            height: 80%;
+            overflow-y: auto;
+            z-index: 999;
+            transition: all 0.3s ease-in-out;
+        }
+
+        h3 {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 16px;
+        }
+
+        .feedback-item {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: background 0.3s ease-in-out;
+        }
+
+        .feedback-item p {
+            margin: 5px 0;
+            color: #444;
+        }
+
+        .resolved-button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-top: 8px;
+            transition: background 0.3s ease-in-out;
+        }
+
+        .resolved-button:hover {
+            background: #218838;
+        }
+
+        .resolved-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .resolved {
+            background: #d4edda;
+        }
+      
+        #feedback-panel.collapsed {
+    width: 40px;
+    height: 40px;
+    overflow: hidden;
+    padding: 5px;
+    text-align: center;
+}
+
+#feedback-panel.collapsed #toggle-panel {
+    width: 100%;
+    height: 100%;
+}
+
+#feedback-panel.collapsed h3,
+#feedback-panel.collapsed #feedback-list {
+    display: none;
+}
+
+.highlighted-feedback {
+    background-color: #ffffcc;
+    cursor: pointer;
+    border-radius: 2px;
+}
+
+    </style>
+</head>
+<body>
+    <h1>Test your inline feedback widget</h1>
+    <p>
+        Try highlighting some text here and leaving feedback on it. You can test this
+        by highlighting a typo or any text you'd like to comment on.
+    </p>
+
+    <!-- Feedback widget -->
+    <div id="feedback-widget">
+        <p>Selected Text: <span id="highlighted-text"></span></p>
+        <textarea id="feedback-text" rows="4" cols="30" placeholder="Leave your feedback here..."></textarea>
+        <br>
+        <button id="submit-feedback">Submit Feedback</button>
+    </div>
+
+    <!-- Feedback Panel -->
+    <div id="feedback-panel">
+        <button id="toggle-panel">-</button>
+        <h3>Feedback Panel</h3>
+        <div id="feedback-list"></div>
+    </div>
+    
+
+    <script src="feedback.js"></script>
+</body>
+</html>
