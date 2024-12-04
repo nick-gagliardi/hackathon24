@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inline Feedback Widget</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7fc;
+        }
+
+        #feedback-widget {
+    position: fixed; /* Fixed position relative to the viewport */
+    background: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 16px;
+    z-index: 1000;
+    display: none; /* Initially hidden */
+    font-family: Arial, sans-serif;
+    width: 300px; /* Fixed width */
+    max-width: 90%; /* To ensure it doesn't overflow */
+    box-sizing: border-box;
+    transition: all 0.3s ease-in-out;
+    max-height: 60vh; /* Prevent widget from growing too tall */
+    overflow-y: auto; /* Allow scrolling if content is too long */
+    word-wrap: break-word; /* Prevent long text from overflowing */
+}
+
+        #feedback-widget h4 {
+            margin: 0;
+            color: #333;
+            font-size: 1em;
+        }
+
+        #highlighted-text {
+    font-size: 0.9em;
+    color: #555;
+    margin: 8px 0;
+    background: #efefef;
+    padding: 8px;
+    border-radius: 4px;
+    max-width: 100%; /* Ensure the text doesn't overflow */
+    white-space: normal; /* Allow wrapping */
+    word-wrap: break-word; /* Ensure words break and wrap */
+    overflow-wrap: break-word; /* Break long words */
+    display: block; /* Ensure it doesn’t extend beyond its container */
+    max-height: 80px; /* Limit text height, adding scroll if necessary */
+    overflow: hidden; /* Hide overflow content */
+}
+
+        #feedback-text {
+            width: 100%;
+            height: 60px;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 0.9em;
+            box-sizing: border-box;
+        }
+
+        #submit-feedback {
+            width: 100%;
+            padding: 8px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.3s ease-in-out;
+        }
+
+        #submit-feedback:hover {
+            background: #0056b3;
+        }
+
+        #feedback-panel {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            width: 320px;
+            background: #fff;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            height: 80%;
+            overflow-y: auto;
+            z-index: 999;
+            transition: all 0.3s ease-in-out;
+        }
+
+        h3 {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 16px;
+        }
+
+        .feedback-item {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: background 0.3s ease-in-out;
+        }
+
+        .feedback-item p {
+            margin: 5px 0;
+            color: #444;
+        }
+
+        .resolved-button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-top: 8px;
+            transition: background 0.3s ease-in-out;
+        }
+
+        .resolved-button:hover {
+            background: #218838;
+        }
+
+        .resolved-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .resolved {
+            background: #d4edda;
+        }
+      
+        #feedback-panel.collapsed {
+    width: 40px;
+    height: 40px;
+    overflow: hidden;
+    padding: 5px;
+    text-align: center;
+}
+
+#feedback-panel.collapsed #toggle-panel {
+    width: 100%;
+    height: 100%;
+}
+
+#feedback-panel.collapsed h3,
+#feedback-panel.collapsed #feedback-list {
+    display: none;
+}
+
+.highlighted-feedback {
+    background-color: #ffffcc;
+    cursor: pointer;
+    border-radius: 2px;
+}
+
+    </style>
+</head>
+<body>
+    <h1>Test your inline feedback widget</h1>
+    <p>
+        Try highlighting some text here and leaving feedback on it. You can test this
+        by highlighting a typo or any text you'd like to comment on.
+    </p>
+
+    <!-- Feedback widget -->
+    <div id="feedback-widget">
+        <p>Selected Text: <span id="highlighted-text"></span></p>
+        <textarea id="feedback-text" rows="4" cols="30" placeholder="Leave your feedback here..."></textarea>
+        <br>
+        <button id="submit-feedback">Submit Feedback</button>
+    </div>
+
+    <!-- Feedback Panel -->
+    <div id="feedback-panel">
+        <button id="toggle-panel">-</button>
+        <h3>Feedback Panel</h3>
+        <div id="feedback-list"></div>
+    </div>
+    
+
+    <script>let isWidgetOpen = false; // Flag to track widget visibility
+        let widget = document.getElementById('feedback-widget');
+        let feedbackPanel = document.getElementById('feedback-panel');
+        
+        // Initialize Contentful client (replace with your actual space ID and access token)
+        import contentful from 'contentful';
+        const client = contentful.createClient({
+            space: 'cdy7uua7fh8z',  // Replace with your actual space ID
+            accessToken: 'Ecq6YW7CwG21whqET7H4Yl6oDOPbViFNVf5k4QW3prk'  // Replace with your actual access token
+        });
+        
+        document.addEventListener('mouseup', function(event) {
+            const selectedText = window.getSelection().toString().trim();
+            console.log("Mouseup event triggered, selected text: ", selectedText);
+        
+            // If click is inside the feedback panel, don't open widget
+            if (feedbackPanel.contains(event.target)) {
+                console.log("Click inside feedback panel. Widget will not open.");
+                return; // Do nothing if the selection is inside the feedback panel
+            }
+        
+            if (selectedText.length > 0) {
+                const highlightedTextElem = document.getElementById('highlighted-text');
+                const feedbackTextArea = document.getElementById('feedback-text');
+                highlightedTextElem.textContent = selectedText;
+        
+                // Position widget near highlighted text
+                const selection = window.getSelection();
+                const range = selection.getRangeAt(0);
+                const rect = range.getBoundingClientRect();
+                
+                console.log("Widget position calculated: ", rect);
+        
+                // Ensure widget is visible
+                widget.style.display = 'block';
+        
+                // Prevent widget from going off the bottom of the screen
+                const widgetHeight = widget.offsetHeight;
+                const maxBottom = window.innerHeight - widgetHeight - 10;
+                widget.style.top = `${Math.min(rect.bottom + window.scrollY, maxBottom)}px`;
+        
+                // Prevent widget from going off the right side of the screen
+                const widgetWidth = widget.offsetWidth;
+                const maxRight = window.innerWidth - widgetWidth - 10;
+                widget.style.left = `${Math.min(rect.left + window.scrollX, maxRight)}px`;
+        
+                // Only add click outside listener once the widget is open
+                if (!isWidgetOpen && widget.style.display === 'block') {
+                    isWidgetOpen = true;
+                    console.log("Widget is now open.");
+        
+                    // Delay the outside click detection slightly
+                    setTimeout(function() {
+                        // Listen for clicks outside the widget to close it
+                        document.addEventListener('click', handleClickOutside);
+                    }, 100); // Delay in ms, adjust as necessary
+                }
+        
+                // Handle the submit feedback action
+                document.getElementById('submit-feedback').onclick = function () {
+                    const feedback = feedbackTextArea.value.trim();
+                    if (feedback && selectedText) {
+                        // Retrieve the entry that holds the hidden JSON field for feedback
+                        client.getEntry('YOUR_ENTRY_ID')  // Replace with your actual entry ID
+                            .then(entry => {
+                                // Retrieve the existing feedback data from the hidden JSON field
+                                const feedbackData = entry.fields.feedback || [];  // Assuming 'feedback' is the hidden JSON field
+        
+                                // Create the new feedback object
+                                const newFeedback = {
+                                    text: selectedText,
+                                    feedback: feedback,
+                                    timestamp: new Date().toISOString(),
+                                    resolved: false
+                                };
+        
+                                // Append the new feedback to the existing data
+                                feedbackData.push(newFeedback);
+        
+                                // Update the entry with the new feedback
+                                entry.fields.feedback = feedbackData;
+        
+                                return entry.update();  // Update the entry with new feedback
+                            })
+                            .then(updatedEntry => {
+                                console.log('Feedback submitted to Contentful:', updatedEntry);
+                                alert('Thank you for your feedback!');
+                                widget.style.display = 'none';
+                                feedbackTextArea.value = '';
+                                displayFeedback(); // Optionally refresh feedback display
+                            })
+                            .catch(console.error);
+                    } else {
+                        alert('Please select text and enter feedback');
+                    }
+                };
+            } else {
+                console.log("No text selected.");
+            }
+        });
+        
+        // Prevent outside click from closing the widget if clicked inside the widget
+        widget.addEventListener('click', function(event) {
+            event.stopPropagation(); // Prevent the click from bubbling up to the document
+        });
+        
+        function handleClickOutside(event) {
+            // Check if the widget is actually visible before checking for outside clicks
+            if (widget.style.display === 'block' && !widget.contains(event.target) && !feedbackPanel.contains(event.target)) {
+                widget.style.display = 'none';
+                isWidgetOpen = false; // Reset flag when widget is closed
+                document.removeEventListener('click', handleClickOutside); // Clean up event listener
+                console.log("Click outside detected, widget closed.");
+            }
+        }
+        
+        function displayFeedback() {
+            const feedbackList = document.getElementById('feedback-list');
+            feedbackList.innerHTML = ''; // Clear list
+        
+            // Fetch the entry with the feedback data from Contentful
+            client.getEntry('YOUR_ENTRY_ID')  // Replace with your actual entry ID
+                .then(entry => {
+                    const feedbackData = entry.fields.feedback || [];  // Assuming 'feedback' is the hidden JSON field
+                    
+                    feedbackData.forEach((item, index) => {
+                        // Only display unresolved feedback
+                        if (item.resolved) {
+                            return; // Skip this item if it is resolved
+                        }
+        
+                        const feedbackElement = document.createElement('div');
+                        feedbackElement.classList.add('feedback-item');
+                        feedbackElement.innerHTML = `
+                            <p><strong>Text:</strong> "${item.text}"</p>
+                            <p><strong>Feedback:</strong> ${item.feedback}</p>
+                            <p>Status: ${item.resolved ? "Resolved" : "Pending"}</p>
+                            <button onclick="resolveFeedback(${index})" class="resolved-button" ${item.resolved ? "disabled" : ""}>
+                                ${item.resolved ? "Resolved" : "Mark as Resolved"}
+                            </button>
+                            <hr>
+                        `;
+                        
+                        // Change button color based on resolved status
+                        const button = feedbackElement.querySelector("button");
+                        if (item.resolved) {
+                            button.style.backgroundColor = "#6c757d"; // grey
+                            button.style.cursor = "not-allowed"; // disable cursor
+                        } else {
+                            button.style.backgroundColor = "#28a745"; // green
+                            button.style.cursor = "pointer"; // enable cursor
+                        }
+        
+                        // Add click event to focus on the highlighted text
+                        feedbackElement.addEventListener('click', () => {
+                            const highlightedText = document.querySelector(
+                                `.highlighted-feedback[data-feedback-id="${index}"]`
+                            );
+                            if (highlightedText) {
+                                highlightedText.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                highlightedText.style.outline = '2px solid #007bff'; // Optional focus style
+                                setTimeout(() => (highlightedText.style.outline = ''), 2000); // Remove focus style
+                            }
+                        });
+        
+                        feedbackList.appendChild(feedbackElement);
+                    });
+                })
+                .catch(console.error);
+        }
+        
+        function resolveFeedback(index) {
+            const feedbackList = document.getElementById('feedback-list');
+            const feedbackData = feedbackList[index];
+            feedbackData.resolved = true;
+        
+            console.log("Resolving feedback at index:", index);
+        
+            // Update feedback status in Contentful
+            client.getEntry('YOUR_ENTRY_ID')  // Replace with your actual entry ID
+                .then(entry => {
+                    // Update the resolved status of the feedback in the hidden JSON field
+                    const feedbackData = entry.fields.feedback || [];
+                    feedbackData[index].resolved = true;
+                    entry.fields.feedback = feedbackData;
+                    return entry.update();
+                })
+                .then(updatedEntry => {
+                    console.log('Feedback resolved in Contentful:', updatedEntry);
+                    displayFeedback(); // Optionally refresh feedback display
+                })
+                .catch(console.error);
+        }
+        
+        // Initially display feedback
+        displayFeedback();
+        
+        document.getElementById('toggle-panel').addEventListener('click', function() {
+            const feedbackPanel = document.getElementById('feedback-panel');
+            feedbackPanel.classList.toggle('collapsed');
+            this.textContent = feedbackPanel.classList.contains('collapsed') ? '+' : '-';
+        });
+        </script>
+</body>
+</html>
